@@ -5,6 +5,11 @@
  */
 package com.craigdearden.time;
 
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+
 /**
  *
  * @author C1
@@ -17,7 +22,18 @@ public class AlarmClockDriver
      */
     public static void main(String[] args)
     {
-               // TODO code application logic here
+        Alarm a = new Alarm().setName("Wake up!")
+                             .setOn(true)
+                             .setRepeat(true)
+                             .setRepeatEvery(Duration.of(24, ChronoUnit.HOURS))
+                             .setTime(LocalTime.parse("5:30", DateTimeFormatter.ISO_LOCAL_TIME));
+        System.out.println(a);
+        System.out.println(LocalTime.now());
+        System.out.println(a.getTime());
+            
+        a.start();
+        
+        System.out.println("end");
     }
     
 }
