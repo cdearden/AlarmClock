@@ -5,102 +5,189 @@
  */
 package com.craigdearden.time;
 
-import java.sql.Date;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 
-public class Alarm
-{
-    private String _name;
-    private long _time;
-    private Date _repeat;
-    private boolean _on;
-//  private music _tone;
-    
-    Alarm()
-    {
-        _name = "";
-        _time = 0;
-        _repeat = null;
-        _on = false;
+public class Alarm implements Runnable {
+
+  /**
+   * The thread in which to run this alarm.
+   */
+  private Thread thread;
+
+  /**
+   * The name given to the alarm by the user.
+   */
+  private String name;
+
+  /**
+   * The time the alarm was set for.
+   */
+  private LocalTime time;
+
+  /**
+   * true if repeat is turned on.
+   */
+  private boolean repeat;
+
+  /**
+   * The interval of time to wait between alarm soundings.
+   */
+  private Duration repeatInterval;
+
+  /**
+   * true if the alarm is on.
+   */
+  private boolean on;
+
+  Alarm() {
+    name = "Default";
+    time = LocalTime.parse("12:00");
+    repeat = false;
+    repeatInterval = Duration.of(1, ChronoUnit.DAYS);
+    on = false;
+  }
+
+  Alarm(String name, LocalTime time) {
+    this.name = name;
+    this.time = time;
+    repeat = false;
+    repeatInterval = Duration.of(1, ChronoUnit.DAYS);
+    on = true;
+  }
+
+  public void start() {
+    if (getThread() == null) {
+      thread = new Thread(this, name);
+      getThread().start();
+    }
+  }
+
+  /**
+   * The time from now until the next alarm is determined. The thread is put to sleep
+   * until that time. When the thread awakes it sounds the alarm. The time until the
+   * next alarm is then set as the repeat time.
+   */
+  @Override
+  public void run() {
+    Duration tillAlarm = Duration.between(LocalTime.now(), time);
+    if (tillAlarm.isNegative()) {
+      tillAlarm = tillAlarm.plus(24, ChronoUnit.HOURS);
     }
 
-    Alarm(String name, long time, Date repeat, boolean on)
-    {
-        _name = name;
-        _time = time;
-        _repeat = repeat;
-        _on = on;
+    while (isOn()) {
+      try {
+        Thread.sleep(tillAlarm.toMillis());
+      } catch (InterruptedException ex) {
+        System.out.println("Thread: " + getThread().getName() + " interrupted!");
+      }
+      soundAlarm();
+      tillAlarm = repeatInterval;
     }
-   
+  }
 
-    /**
-     * @return the _name
-     */
-    public String getName()
-    {
-        return _name;
-    }
+  public void soundAlarm() {
+    System.out.println("*****Sounding Alarm: " + name + "*****");
+  }
 
-    /**
-     * @param _name the _name to set
-     */
-    public void setName(String name)
-    {
-        this._name = name;
-    }
+  /**
+   * @return the name
+   */
+  public String getName() {
+    return name;
+  }
 
-    /**
-     * @return the _time
-     */
-    public long getTime()
-    {
-        return _time;
-    }
+  /**
+   * @param name the name to set
+   * @return this <code>Alarm</code> instance
+   */
+  public Alarm setName(String name) {
+    this.name = name;
+    return this;
+  }
 
-    /**
-     * @param _time the _time to set
-     */
-    public void setTime(long time)
-    {
-        this._time = time;
-    }
+  /**
+   * @return the time
+   */
+  public LocalTime getTime() {
+    return time;
+  }
 
-    /**
-     * @return the _repeat
-     */
-    public Date getRepeat()
-    {
-        return _repeat;
-    }
+  /**
+   * @param time the time to set
+   * @return this <code>Alarm</code> instance
+   */
+  public Alarm setTime(LocalTime time) {
+    this.time = time;
+    return this;
+  }
 
-    /**
-     * @param _repeat the _repeat to set
-     */
-    public void setRepeat(Date repeat)
-    {
-        this._repeat = repeat;
-    }
+  /**
+   * @return the repeat
+   */
+  public boolean getRepeat() {
+    return repeat;
+  }
 
-    /**
-     * @return the _on
-     */
-    public boolean isOn()
-    {
-        return _on;
-    }
+  /**
+   * @param repeat the repeat to set
+   * @return this <code>Alarm</code> instance
+   */
+  public Alarm setRepeat(Boolean repeat) {
+    this.repeat = repeat;
+    return this;
+  }
 
-    /**
-     * @param _on the _on to set
-     */
-    public void setOn(boolean on)
-    {
-        this._on = on;
-    }
+  /**
+   * @return the on
+   */
+  public boolean isOn() {
+    return on;
+  }
 
-    @Override
-    public String toString()
-    {
-        String status = isOn() ? "ON" : "OFF";
-        String alarm = String.format("%1$20s, %2$50d, Repeat every: %3$50t, %4$10s", getName(), getTime(), getRepeat(), "Alarm: " + status);
-        return alarm;
-    }
+  /**
+   * @param on the on to set
+   * @return this <code>Alarm</code> instance
+   */
+  public Alarm setOn(boolean on) {
+    this.on = on;
+    return this;
+  }
+
+  /**
+   * @return the repeatInterval
+   */
+  public Duration getRepeatEvery() {
+    return repeatInterval;
+  }
+
+  /**
+   * @param repeatInterval the repeatInterval to set
+   * @return this <code>Alarm</code> instance
+   */
+  public Alarm setRepeatEvery(Duration repeatInterval) {
+    this.repeatInterval = repeatInterval;
+    return this;
+  }
+
+  /**
+   * @return a String displaying the alarm information.
+   */
+  @Override
+  public String toString() {
+    String status = isOn() ? "ON" : "OFF";
+    String alarm = String.format(
+        "%1$-10s %2$-10s Repeat every: %3$-10s %4$-4s", name,
+        time.toString(), repeatInterval.toString(), "Alarm: " + status);
+    return alarm;
+  }
+
+  /**
+   * @return the thread
+   */
+  public Thread getThread() {
+    return thread;
+  }
+
 }
